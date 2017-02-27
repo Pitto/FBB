@@ -8,12 +8,15 @@ type p_proto
 	next_p  	as p_proto ptr
 end type	
 
-
-
 type view_area_proto
-	x as single
-	y as single
-	zoom as single
+    x 		as single
+    y 		as single
+    w 		as single
+    h 		as single
+    speed 	as single
+    rds 	as single
+	zoom 	as single
+	old_zoom 	as single
 end type
 
 Type mouse_proto

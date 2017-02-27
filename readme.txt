@@ -29,8 +29,18 @@ AKNOWLEDGEMENTS
 	https://pomax.github.io/bezierinfo/
 · 	De Casteljau Algorithm tranlsated from this C++ implementation
 	http://blog.demofox.org/2015/07/05/the-de-casteljeau-algorithm-for-evaluating-bezier-curves/
+	
+
 
 VERSION HISTORY
+
+FBB 0.02 _______________________________________________________________
+* Pan & zoom vector
+* Pan & zoom bitmap
+* Debug info
+* Hand tool
+* import bitmap of any size
+
 
 FBB 0.01 _______________________________________________________________
 * Single path editing

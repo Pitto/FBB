@@ -1,5 +1,5 @@
-declare sub keyboard_listener(input_mode as proto_input_mode ptr)
-declare sub draw_input_mode (input_mode as proto_input_mode ptr, x as integer, y as integer)
+declare sub keyboard_listener(input_mode as proto_input_mode ptr, view_area as view_area_proto ptr)
+declare sub draw_input_mode (input_mode as proto_input_mode, x as integer, y as integer)
 declare sub draw_mouse_pointer	(	user_mouse as mouse_proto, _
 							input_mode as proto_input_mode, _
 							icon_set() as Uinteger ptr)
@@ -7,7 +7,7 @@ declare sub mouse_listener(user_mouse as mouse_proto ptr)
 declare sub load_bmp ( bmp() as Uinteger ptr, w as integer, h as integer, _
 					   cols as integer, rows as integer, Byref bmp_path as string)
 	   
-declare sub display (head as p_proto ptr, user_mouse as mouse_proto ptr)
+declare sub display (head as p_proto ptr, user_mouse as mouse_proto ptr,  view_area as view_area_proto)
 declare sub draw_bottom_info (icon_set() as Uinteger ptr)
 
 declare sub draw_segment (	x1 as single, 	y1 as single,  _
@@ -63,20 +63,71 @@ sub draw_bottom_info (icon_set() as Uinteger ptr)
 	
 end sub
 
-sub keyboard_listener(input_mode as proto_input_mode ptr)
+sub keyboard_listener(input_mode as proto_input_mode ptr, view_area as view_area_proto ptr)
+	static old_input_mode as proto_input_mode = pen
+	
+	dim e As EVENT
+		If (ScreenEvent(@e)) Then
+		Select Case e.type
+		Case EVENT_KEY_RELEASE
+			'switch Debug mode ON/OFF___________________________________
+			If (e.scancode = SC_D) Then
+				if Debug_mode then
+					Debug_mode = false
+				else
+					Debug_mode = true
+				end if
+			end if
+			'ZOOM CONTROL_______________________________________________
+			If (e.scancode = SC_PLUS) Then
+				if multikey (SC_CONTROL) then
+					view_area->zoom *= 2.0
+					if view_area->zoom > 4.0 then view_area->zoom = 4.0
+				end if
+			end if
+			If (e.scancode = SC_MINUS) Then
+				if multikey (SC_CONTROL) then
+					view_area->zoom *= 0.5f
+					if view_area->zoom > 0.25f then view_area->zoom = 0.25f
+				end if
+			end if
+			If (e.scancode = SC_0) Then
+				if multikey (SC_CONTROL) then
+					view_area->zoom = 1.0f
+					view_area->x = 0
+					view_area->y = 0
+				end if
+			end if
+		End Select
+	End If
+	
+	'this is for the hand ovverride tool
+	if multikey (SC_SPACE) then
+		*input_mode = hand
+	else
+		*input_mode = old_input_mode
+	end if
 	if multikey (SC_V) then *input_mode = selection
 	if multikey (SC_A) then *input_mode = direct_selection
 	if multikey (SC_P) then *input_mode = pen
+	
+	'this is for the hand ovverride tool
+	if *input_mode <> hand then
+		old_input_mode = *input_mode
+	end if
+	
 end sub
 
-sub draw_input_mode (input_mode as proto_input_mode ptr, x as integer, y as integer)
-	select case *input_mode
+sub draw_input_mode (input_mode as proto_input_mode, x as integer, y as integer)
+	select case input_mode
 		case selection
 			draw string (x, y), "SELECTION"
 		case direct_selection
 			draw string (x, y), "DIRECT SELECTION"
 		case pen
 			draw string (x, y), "PEN TOOL"
+		case hand
+			draw string (x, y), "HAND TOOL"
 		case else
 			draw string (x, y), "???"
 	end select
@@ -93,26 +144,32 @@ sub draw_mouse_pointer	(	user_mouse as mouse_proto, _
 	draw string (10, 10), "x " + str(User_Mouse.x)
 	draw string (60, 10), "y " + str(User_Mouse.y)
 
-	if User_Mouse.is_lbtn_pressed then
-		circle (User_Mouse.x, User_Mouse.y), 2, C_RED	
-		circle (User_Mouse.oppo_x, User_Mouse.oppo_y), 2, C_RED	
-	end if
-	
-		
-
-	if User_Mouse.is_dragging = false then
-		put (user_mouse.x-12, user_mouse.y), icon_set(icon_pen), trans
-		
-	else
+	select case input_mode
+		case pen
+			if User_Mouse.is_lbtn_pressed then
+				circle (User_Mouse.x, User_Mouse.y), 2, C_RED	
+				circle (User_Mouse.oppo_x, User_Mouse.oppo_y), 2, C_RED	
+			end if
+			if User_Mouse.is_dragging = false then
+				put (user_mouse.x-12, user_mouse.y), icon_set(icon_pen), trans
 				
-		circle(User_mouse.old_x, User_mouse.old_y), 2
-		circle (User_mouse.oppo_x, User_mouse.oppo_y), 2, C_RED
+			else	
+				circle(User_mouse.old_x, User_mouse.old_y), 2
+				circle (User_mouse.oppo_x, User_mouse.oppo_y), 2, C_RED
+						
+				line (User_Mouse.x, User_Mouse.y)-(User_Mouse.old_x, User_Mouse.old_y), C_DARK_RED
+				line (User_Mouse.old_x, User_Mouse.old_y)-(User_mouse.oppo_x, User_mouse.oppo_y), C_DARK_RED
 				
-		line (User_Mouse.x, User_Mouse.y)-(User_Mouse.old_x, User_Mouse.old_y), C_DARK_RED
-		line (User_Mouse.old_x, User_Mouse.old_y)-(User_mouse.oppo_x, User_mouse.oppo_y), C_DARK_RED
-		
-		put (user_mouse.x-12, user_mouse.y), icon_set(icon_drag_handle), trans
-	end if
+				put (user_mouse.x-12, user_mouse.y), icon_set(icon_drag_handle), trans
+			end if
+		case selection
+			put (user_mouse.x-12, user_mouse.y), icon_set(icon_selection), trans
+		case direct_selection
+			put (user_mouse.x-12, user_mouse.y), icon_set(icon_direct_selection), trans
+		case hand
+			put (user_mouse.x-12, user_mouse.y), icon_set(icon_hand), trans
+			
+	end select
 
 end sub
 
@@ -195,12 +252,39 @@ sub load_bmp ( 	bmp() as Uinteger ptr, w as integer, h as integer, _
 
 end sub
 
-sub display (head as p_proto ptr, user_mouse as mouse_proto ptr)
+sub display (head as p_proto ptr, user_mouse as mouse_proto ptr, view_area as view_area_proto)
 dim as integer p_oldx, p_oldy, py, px, p_oldx_h, p_oldy_h, prev_p_oldx_h, prev_p_oldy_h
-dim c as integer
-dim last as p_proto ptr
-	while (head <> NULL)
+dim c as integer = 0
+
+
+draw string (50, 50), str(hex(head))
+
+'handles of last segment
+if (head) then
+	
+	line 	(head->x * view_area.zoom + view_area.x, _
+			head->y * view_area.zoom + view_area.y)- _
+			(head->x_h * view_area.zoom + view_area.x, _
+			head->y_h * view_area.zoom + view_area.y), 	HANDLE_COLOR
+	
+	line 	(head->x * view_area.zoom + view_area.x, _
+			head->y * view_area.zoom + view_area.y)- _
+			(head->x_h_prev * view_area.zoom + view_area.x, _
+			head->y_h_prev * view_area.zoom + view_area.y), 	HANDLE_COLOR
+			
 		
+	circle 	(head->x * view_area.zoom + view_area.x, _
+			head->y * view_area.zoom + view_area.y), NODE_W, HANDLE_COLOR, , , , F
+	circle 	(head->x_h * view_area.zoom + view_area.x, _
+			head->y_h * view_area.zoom + view_area.y), NODE_W, HANDLE_COLOR, , , , F
+	circle 	(head->x_h_prev * view_area.zoom + view_area.x, _
+			head->y_h_prev * view_area.zoom + view_area.y), NODE_W, HANDLE_COLOR, , , , F
+
+end if
+
+
+
+	while (head <> NULL)
 		
 		
 		p_oldx = head->x
@@ -211,32 +295,47 @@ dim last as p_proto ptr
 		prev_p_oldy_h = head->y_h_prev
 	
 		head = head->next_p
-	
+		
 		if (head) then
 
 			px = head->x
 			py = head->y
 			
 			'node higlight
-			circle (p_oldx, p_oldy), NODE_W, NODE_COLOR, , , , F
+			circle (p_oldx * view_area.zoom + view_area.x, _
+					p_oldy * view_area.zoom + view_area.y), NODE_W, NODE_COLOR, , , , F
 
-			'handles
-			line (p_oldx, p_oldy)-(p_oldx_h, p_oldy_h), HANDLE_COLOR
-			circle (p_oldx_h, p_oldy_h), NODE_W, HANDLE_COLOR, , , , F
-			line (head->x, head->y)-(head->x_h, head->y_h), HANDLE_COLOR
-			circle (head->x_h, head->y_h), NODE_W, HANDLE_COLOR, , , , F
-			line (p_oldx, p_oldy)-(prev_p_oldx_h, prev_p_oldy_h), HANDLE_COLOR
-			circle (head->x_h_prev, head->y_h_prev), NODE_W, HANDLE_COLOR, , , , F
+			draw_segment(	p_oldx * view_area.zoom + view_area.x, _
+							p_oldy * view_area.zoom + view_area.y, _
+							p_oldx_h * view_area.zoom + view_area.x, _
+							p_oldy_h * view_area.zoom + view_area.y, _
+							head->x * view_area.zoom + view_area.x,_
+							head->y * view_area.zoom + view_area.y,_
+							head->x_h_prev * view_area.zoom + view_area.x,_
+							head->y_h_prev * view_area.zoom + view_area.y)
 			
-			draw_segment(	p_oldx,p_oldy,p_oldx_h,p_oldy_h, _
-							head->x,head->y,head->x_h_prev,head->y_h_prev)
-							
-			
+			'shows Hex values of linked list's node pointers
+			if (Debug_mode) then 		
+				draw string ((p_oldx + 4) * view_area.zoom + view_area.x, _
+							(p_oldy + 4) * view_area.zoom + view_area.y), "[+] " + str(hex(head)), C_GRAY
+				draw string ((p_oldx + 4) * view_area.zoom + view_area.x, _
+							(p_oldy + 9) * view_area.zoom + view_area.y), "[>] " + str(hex(head->next_p)), C_GRAY
+			end if			
+			'highlight last node
+			if head-> next_p = NULL then
+				circle (head->x * view_area.zoom + view_area.x, _
+						head->y * view_area.zoom + view_area.y), _
+						NODE_W +1, NODE_COLOR
+				circle (head->x * view_area.zoom + view_area.x, _
+						head->y * view_area.zoom + view_area.y), _
+						NODE_W, NODE_COLOR
+			end if
 					
 		end if
-		
+		c +=1
 	wend
-	
+
+
 end sub
 
 sub draw_segment (	x1 as single, 	y1 as single,  _
@@ -247,11 +346,9 @@ sub draw_segment (	x1 as single, 	y1 as single,  _
 	for t = 0 to 1 step SEGMENT_PRECISION
 		tx = BezierCubic( x1, x1h, x2h, x2, t)
 		ty = BezierCubic( y1, y1h, y2h, y2, t)
-		'pset (	BezierCubic( x1, x1h, x2h, x2, t),_
-		'		BezierCubic( y1, y1h, y2h, y2, t))
 		
 		if (t) then
-			line (old_tx, old_ty)-(tx,ty)
+			line (old_tx, old_ty)-(tx,ty), C_GRAY
 		end if
 		old_tx = tx
 		old_ty = ty

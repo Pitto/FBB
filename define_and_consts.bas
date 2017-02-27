@@ -1,12 +1,12 @@
 #define APP_NAME 				"FBBezier"
-#define APP_VERSION 			"0.01"
+#define APP_VERSION 			"0.02"
 #define SCR_W 					800	
 #define SCR_H 					600
 #define ICON_W 					24
 #define ICON_H 					24
 #define NODE_W 					2
 #define HANDLE_W				2
-#define SEGMENT_PRECISION		0.05
+#define SEGMENT_PRECISION		0.02
 
 
 'colors
