@@ -29,17 +29,18 @@ AKNOWLEDGEMENTS
 	https://pomax.github.io/bezierinfo/
 · 	De Casteljau Algorithm tranlsated from this C++ implementation
 	http://blog.demofox.org/2015/07/05/the-de-casteljeau-algorithm-for-evaluating-bezier-curves/
-	
+· 	Noop, for his function of upscaling/downscaling bitmap
+    'http://www.freebasic.net/forum/viewtopic.php?t=24586
 
 
 VERSION HISTORY
 
 FBB 0.02 _______________________________________________________________
 * Pan & zoom vector
-* Pan & zoom bitmap
+* Pan & zoom bitmap -> thanks to Noop -> http://www.freebasic.net/forum/viewtopic.php?t=24586
 * Debug info
 * Hand tool
-* import bitmap of any size
+* import bitmap of any size -> thanks to Noop -> http://www.freebasic.net/forum/viewtopic.php?t=24586
 
 
 FBB 0.01 _______________________________________________________________

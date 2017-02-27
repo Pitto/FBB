@@ -7,11 +7,14 @@ declare function BezierQuadratic(A as single, B as single, C as single, t as sin
 declare function BezierCubic(A as single, B as single, C as single, D as single, t as single) as single
 declare function d_b_t_p (x1 as single, y1 as single, x2 as single, y2 as single) as single
 
+'This routine has been written by noop
+ 'http://www.freebasic.net/forum/viewtopic.php?t=24586
 declare function scaleImg( _
             byval img as FB.Image ptr, _
             byval targetWidth as const integer, _
             byval targetHeight as const integer) as FB.Image ptr
-            
+'This routine has been written by noop
+    'http://www.freebasic.net/forum/viewtopic.php?t=24586        
 declare Function bmp_load( ByRef filename As Const String ) As Any Ptr
 
 function d_b_t_p (x1 as single, y1 as single, x2 as single, y2 as single) as single
@@ -56,7 +59,8 @@ function BezierCubic(A as single, B as single, C as single, D as single, t as si
 end function
 
 
-
+'This routine has been written by noop
+    'http://www.freebasic.net/forum/viewtopic.php?t=24586
 function scaleImg( _
             byval img as FB.Image ptr, _
             byval targetWidth as const integer, _
@@ -173,7 +177,8 @@ function scaleImg( _
     return nimg
 end function
 
-
+'This routine has been written by noop
+    'http://www.freebasic.net/forum/viewtopic.php?t=24586
 Function bmp_load( ByRef filename As Const String ) As Any Ptr
 
     Dim As Long filenum, bmpwidth, bmpheight
