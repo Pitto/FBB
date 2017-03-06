@@ -30,10 +30,15 @@ AKNOWLEDGEMENTS
 · 	De Casteljau Algorithm tranlsated from this C++ implementation
 	http://blog.demofox.org/2015/07/05/the-de-casteljeau-algorithm-for-evaluating-bezier-curves/
 · 	Noop, for his function of upscaling/downscaling bitmap
-    'http://www.freebasic.net/forum/viewtopic.php?t=24586
+    http://www.freebasic.net/forum/viewtopic.php?t=24586
+· 	D.J. Peters for his very useful fbGFXAddon
+	http://www.freebasic.net/forum/viewtopic.php?f=14&t=25058&p=224638
 
 
 VERSION HISTORY
+
+FBB 0.03 _______________________________________________________________
+* Faster BMP zoom -> thanks to D.J. Peters
 
 FBB 0.02 _______________________________________________________________
 * Pan & zoom vector

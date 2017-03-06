@@ -1,3 +1,5 @@
+type FIXED as long ' 12:20
+
 type p_proto
 	x 			as single
 	y 			as single
@@ -11,6 +13,8 @@ end type
 type view_area_proto
     x 		as single
     y 		as single
+    old_x 	as single
+    old_y 	as single
     w 		as single
     h 		as single
     speed 	as single
@@ -25,6 +29,8 @@ Type mouse_proto
     as boolean is_dragging
     as boolean is_lbtn_released
     as boolean is_lbtn_pressed
+    as boolean is_rbtn_released
+    as boolean is_rbtn_pressed
     Union
         buttons 		As Integer
         Type
@@ -34,3 +40,7 @@ Type mouse_proto
         End Type
     End Union
 End Type
+
+
+
+

@@ -7,12 +7,27 @@ declare function BezierQuadratic(A as single, B as single, C as single, t as sin
 declare function BezierCubic(A as single, B as single, C as single, D as single, t as single) as single
 declare function d_b_t_p (x1 as single, y1 as single, x2 as single, y2 as single) as single
 
-'This routine has been written by noop
- 'http://www.freebasic.net/forum/viewtopic.php?t=24586
+declare function resizePixels(byval img_source as FB.Image ptr, _
+                  w1 as integer, _
+                  h1 as integer, _
+                  w2 as integer, _
+                  h2 as integer) as FB.Image ptr
+
 declare function scaleImg( _
             byval img as FB.Image ptr, _
             byval targetWidth as const integer, _
             byval targetHeight as const integer) as FB.Image ptr
+'fbGFXAddon by D.J. Peters  
+declare function ImageScale(byval s as fb.Image ptr, _
+                    byval w as integer, _
+                    byval h as integer) as fb.Image ptr
+
+'This routine has been written by noop
+ 'http://www.freebasic.net/forum/viewtopic.php?t=24586
+'declare function scaleImg( _
+'            byval img as FB.Image ptr, _
+'            byval targetWidth as const integer, _
+'            byval targetHeight as const integer) as FB.Image ptr
 'This routine has been written by noop
     'http://www.freebasic.net/forum/viewtopic.php?t=24586        
 declare Function bmp_load( ByRef filename As Const String ) As Any Ptr
@@ -59,8 +74,41 @@ function BezierCubic(A as single, B as single, C as single, D as single, t as si
 end function
 
 
+
+function resizePixels(byval img_source as FB.Image ptr, _
+                  w1 as integer, _
+                  h1 as integer, _
+                  w2 as integer, _
+                  h2 as integer) as FB.Image ptr
+                  
+    dim as FB.Image ptr temp = imagecreate(w2,h2)
+
+    dim x_ratio as integer = (int((w1 shl 16)\w2)) +1
+    dim y_ratio as integer = (int((h1 shl 16)\h2)) +1
+    
+    dim as integer x2, y2, i, j
+
+
+    for i = 0 to (h2-1)
+      for j = 0 to (w2-1)
+			
+			x2 = ((j*x_ratio) shr 16)
+            y2 = ((i*y_ratio) shr 16)
+           
+			dim as FB.Image ptr pt = getPixelAddress(img_source,x2,y2)
+			dim as FB.Image ptr a = getPixelAddress(temp,j,i)
+			
+			a->bpp = pt->bpp
+			
+      next j
+    next i
+   
+    return temp
+   
+end function
+
 'This routine has been written by noop
-    'http://www.freebasic.net/forum/viewtopic.php?t=24586
+'    http://www.freebasic.net/forum/viewtopic.php?t=24586
 function scaleImg( _
             byval img as FB.Image ptr, _
             byval targetWidth as const integer, _
@@ -205,4 +253,65 @@ Function bmp_load( ByRef filename As Const String ) As Any Ptr
     Return img
 
 End Function
+
+'fbGFXAddon by D.J. Peters
+function ImageScale(byval s as fb.Image ptr, _
+                    byval w as integer, _
+                    byval h as integer) as fb.Image ptr
+  #macro SCALELOOP()
+  for ty = 0 to t->height-1
+    ' address of the row
+    pr=ps+(y shr 20)*sp
+    x=0 ' first column
+    for tx = 0 to t->width-1
+      *pt=pr[x shr 20]
+      pt+=1 ' next column
+      x+=xs ' add xstep value
+    next
+    pt+=tp ' next row
+    y+=ys ' add ystep value
+  next
+  #endmacro
+  ' no source image
+  if s        =0 then return 0
+  ' source widh or height legal ?
+  if s->width <1 then return 0
+  if s->height<1 then return 0
+  ' target min size ok ?
+  if w<2 then w=1
+  if h<2 then h=1
+  ' create new scaled image
+  dim as fb.Image ptr t=ImageCreate(w,h,RGB(0,0,0))
+  ' x and y steps in fixed point 12:20
+  dim as FIXED xs=&H100000*(s->width /t->width ) ' [x] [S]tep
+  dim as FIXED ys=&H100000*(s->height/t->height) ' [y] [S]tep
+  dim as integer x,y,ty,tx
+  select case as const s->bpp
+  case 1 ' color palette
+    dim as ubyte    ptr ps=cptr(ubyte ptr,s)+32 ' [p]ixel   [s]ource
+    dim as uinteger     sp=s->pitch             ' [s]ource  [p]itch
+    dim as ubyte    ptr pt=cptr(ubyte ptr,t)+32 ' [p]ixel   [t]arget
+    dim as uinteger     tp=t->pitch - t->width  ' [t]arget  [p]itch
+    dim as ubyte    ptr pr                      ' [p]ointer [r]ow
+    SCALELOOP()
+  case 2 ' 15/16 bit
+    dim as ushort   ptr ps=cptr(ushort ptr,s)+16
+    dim as uinteger     sp=(s->pitch shr 1)
+    dim as ushort   ptr pt=cptr(ushort ptr,t)+16
+    dim as uinteger     tp=(t->pitch shr 1) - t->width
+    dim as ushort   ptr pr
+    SCALELOOP()
+  case 4 ' 24/32 bit
+    dim as ulong    ptr ps=cptr(uinteger ptr,s)+8
+    dim as uinteger     sp=(s->pitch shr 2)
+    dim as ulong    ptr pt=cptr(uinteger ptr,t)+8
+    dim as uinteger     tp=(t->pitch shr 2) - t->width
+    dim as ulong    ptr pr
+    SCALELOOP()
+  end select
+  return t
+  #undef SCALELOOP
+end function
+
+
 

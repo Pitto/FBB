@@ -1,5 +1,5 @@
 #define APP_NAME 				"FBBezier"
-#define APP_VERSION 			"0.02"
+#define APP_VERSION 			"0.03"
 #define SCR_W 					800	
 #define SCR_H 					600
 #define ICON_W 					24

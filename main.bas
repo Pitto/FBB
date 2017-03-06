@@ -53,7 +53,8 @@ const NULL as any ptr = 0
 #endif
 
 #define sfn(v) ((v)*(1.0-0.5*(v)))
-
+'__MACROS_______________________________________________________________
+'calculate angle between two points
 #macro _abtp (x1,y1,x2,y2)
     -Atan2(y2-y1,x2-x1)
 #endmacro
@@ -62,8 +63,7 @@ const NULL as any ptr = 0
 Using FB
 Randomize Timer()
 
-'__MACROS_______________________________________________________________
-'calculate angle between two points
+
 
 dim shared Debug_mode		as boolean = false
 
@@ -109,8 +109,10 @@ screenres SCR_W, SCR_H, 24		'initialize graphics
 SetMouse SCR_W\2, SCR_H\2, 0 	'hides mouse pointer
 
 dim as FB.Image ptr test_bmp = bmp_load( "img/test.bmp" )
-dim as FB.Image ptr test_bmp_2
-test_bmp_2 = scaleImg(test_bmp,test_bmp->width,test_bmp->height)
+
+					
+dim as fb.image ptr test_bmp_2 = ImageScale(test_bmp,test_bmp->width*view_area.zoom,test_bmp->height*view_area.zoom)
+
 load_bmp (icon_set(), 240, 96, 10, 4,"img/icon-set.bmp")
 
 
@@ -118,12 +120,12 @@ load_bmp (icon_set(), 240, 96, 10, 4,"img/icon-set.bmp")
 do
 	if MULTIKEY (SC_Escape) then exit do
 	
-	
-	keyboard_listener(@input_mode, @view_area)
-	mouse_listener(@user_mouse)
+	keyboard_listener(@input_mode, user_mouse, @view_area)
+	mouse_listener(@user_mouse, @view_area)
 	
 	screenlock ' Lock the screen
 	screenset Workpage, Workpage xor 1 ' Swap work pages.
+
 	cls
 	put (view_area.x,view_area.y), test_bmp_2
 	
@@ -132,19 +134,39 @@ do
 	draw string (SCR_W - 350, 20), "An utility for learning Bezier tool"
 	draw string (SCR_W - 350, 30), "Developed in Freebasic by Pitto"
 	
+	dim abs_x_mouse as integer = int(user_mouse.x / view_area.zoom + (-view_area.x / view_area.zoom))
+	dim abs_y_mouse as integer = int(user_mouse.y / view_area.zoom + (-view_area.y / view_area.zoom))
+		
 	if (Debug_mode) then
+		draw string (10, 10), "x " + str(User_Mouse.x)
+		draw string (60, 10), "y " + str(User_Mouse.y)
 		draw string (SCR_W - 150, SCR_H - 10), str(user_mouse.is_lbtn_released)
 		draw string (SCR_W - 150, SCR_H - 20), "is drag: " + str(user_mouse.is_dragging)
 		draw string (SCR_W - 150, SCR_H - 30), "Debug " + str(Debug_mode)
 		draw string (SCR_W - 150, SCR_H - 40), "ZOOM " + str(int(view_area.zoom * 100)) + " %"
 		draw string (SCR_W - 150, SCR_H - 60), "View_area.x " + str(int(view_area.x)) 
 		draw string (SCR_W - 150, SCR_H - 50), "View_area.y " + str(int(view_area.y)) 
-		draw string (user_mouse.x-10, user_mouse.y+5), "x: " + str(int(user_mouse.x / view_area.zoom + (-view_area.x / view_area.zoom)))
-		draw string (user_mouse.x-10, user_mouse.y+13), "y: " + str(int(user_mouse.y / view_area.zoom + (-view_area.y / view_area.zoom))) 
+		draw string (user_mouse.x-10, user_mouse.y+5), "x: " + str(abs_x_mouse)
+		draw string (user_mouse.x-10, user_mouse.y+13), "y: " + str(abs_y_mouse) 
 	end if
-	
-	
-	
+
+	'node deleting
+	if (user_mouse.is_rbtn_released) and CBool(head <> NULL) then
+		dim temp as p_proto ptr
+		temp = head
+		'delete last node
+		if head->next_p then
+			head = head->next_p
+			deallocate(temp)
+			temp = NULL
+		'delete whole path
+		else
+			deallocate(head)
+			head = NULL
+		end if
+		user_mouse.is_rbtn_released = false
+	end if
+
 	select case input_mode
 		'####################### PEN TOOL #############################
 		case pen
@@ -183,24 +205,29 @@ do
 			'####################### HAND TOOL #########################
 			if (user_mouse.is_dragging) then
 				line (user_mouse.x, user_mouse.y)-(user_mouse.old_X, user_mouse.old_y)
-			end if
-			if (user_mouse.is_lbtn_released) then
-				view_area.x += (user_mouse.x - user_mouse.old_x)
-				view_area.y += (user_mouse.y - user_mouse.old_y)
+				view_area.x = view_area.old_x + (user_mouse.x - user_mouse.old_x)
+				view_area.y = view_area.old_y + (user_mouse.y - user_mouse.old_y)
+			else
+				view_area.old_x = view_area.x
+				view_area.old_y = view_area.y
 			end if
 			user_mouse.is_lbtn_released = false
 	end select
 	
 	if (view_area.old_zoom <> view_area.zoom) then
-		test_bmp_2 = scaleImg(test_bmp,view_area.zoom*test_bmp->width,view_area.zoom*test_bmp->height)
+
+		test_bmp_2 = ImageScale(test_bmp,test_bmp->width*view_area.zoom,test_bmp->height*view_area.zoom)
+
 	end if
 	
 	view_area.old_zoom = view_area.zoom
-
+	
 	draw_input_mode	(input_mode, 10, SCR_H - 50)
 	draw_mouse_pointer(user_mouse, input_mode, icon_set())
 	display(head, @user_mouse, view_area)
 	draw_bottom_info (icon_set())
+	
+
 	
 	workpage = 1 - Workpage ' Swap work pages.
 	screenunlock

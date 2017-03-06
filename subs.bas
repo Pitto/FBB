@@ -1,9 +1,12 @@
-declare sub keyboard_listener(input_mode as proto_input_mode ptr, view_area as view_area_proto ptr)
+declare sub keyboard_listener(	input_mode as proto_input_mode ptr, _
+								user_mouse as mouse_proto, _
+								view_area as view_area_proto ptr)
+
 declare sub draw_input_mode (input_mode as proto_input_mode, x as integer, y as integer)
 declare sub draw_mouse_pointer	(	user_mouse as mouse_proto, _
 							input_mode as proto_input_mode, _
 							icon_set() as Uinteger ptr)
-declare sub mouse_listener(user_mouse as mouse_proto ptr)
+declare sub mouse_listener(user_mouse as mouse_proto ptr, view_area as view_area_proto ptr)
 declare sub load_bmp ( bmp() as Uinteger ptr, w as integer, h as integer, _
 					   cols as integer, rows as integer, Byref bmp_path as string)
 	   
@@ -17,11 +20,6 @@ declare sub draw_segment (	x1 as single, 	y1 as single,  _
 
 sub draw_bottom_info (icon_set() as Uinteger ptr)
 	dim c as integer = 0
-	
-	'put footer bar
-	for c = 0 to (SCR_W \ ICON_W) + 1
-		put (ICON_W * c, SCR_H - ICON_H), icon_set(icon_bottom_bar), trans
-	next c
 	
 	for c = 0 to 3
 		select case c
@@ -63,11 +61,14 @@ sub draw_bottom_info (icon_set() as Uinteger ptr)
 	
 end sub
 
-sub keyboard_listener(input_mode as proto_input_mode ptr, view_area as view_area_proto ptr)
+sub keyboard_listener(	input_mode as proto_input_mode ptr, _
+						user_mouse as mouse_proto, _
+						view_area as view_area_proto ptr)
+	
 	static old_input_mode as proto_input_mode = pen
 	
 	dim e As EVENT
-		If (ScreenEvent(@e)) Then
+	If (ScreenEvent(@e)) Then
 		Select Case e.type
 		Case EVENT_KEY_RELEASE
 			'switch Debug mode ON/OFF___________________________________
@@ -78,26 +79,7 @@ sub keyboard_listener(input_mode as proto_input_mode ptr, view_area as view_area
 					Debug_mode = true
 				end if
 			end if
-			'ZOOM CONTROL_______________________________________________
-			If (e.scancode = SC_PLUS) Then
-				if multikey (SC_CONTROL) then
-					view_area->zoom *= 2.0
-					if view_area->zoom > 4.0 then view_area->zoom = 4.0
-				end if
-			end if
-			If (e.scancode = SC_MINUS) Then
-				if multikey (SC_CONTROL) then
-					view_area->zoom *= 0.5f
-					if view_area->zoom > 0.25f then view_area->zoom = 0.25f
-				end if
-			end if
-			If (e.scancode = SC_0) Then
-				if multikey (SC_CONTROL) then
-					view_area->zoom = 1.0f
-					view_area->x = 0
-					view_area->y = 0
-				end if
-			end if
+			
 		End Select
 	End If
 	
@@ -141,8 +123,7 @@ sub draw_mouse_pointer	(	user_mouse as mouse_proto, _
 								User_Mouse.wheel, User_Mouse.buttons,_
 								User_Mouse.clip)
 								
-	draw string (10, 10), "x " + str(User_Mouse.x)
-	draw string (60, 10), "y " + str(User_Mouse.y)
+	
 
 	select case input_mode
 		case pen
@@ -173,16 +154,31 @@ sub draw_mouse_pointer	(	user_mouse as mouse_proto, _
 
 end sub
 
-sub mouse_listener(user_mouse as mouse_proto ptr)
+sub mouse_listener(user_mouse as mouse_proto ptr, view_area as view_area_proto ptr)
 	static old_is_lbtn_pressed as boolean = false
+	static old_is_rbtn_pressed as boolean = false
 	static as integer old_x, old_y
 	static store_xy as boolean = false
+	
+	if User_Mouse->old_wheel < User_Mouse->wheel and view_area->zoom < 4 then
+		view_area->zoom *= 2.0f
+	end if
+	if User_Mouse->old_wheel > User_Mouse->wheel and view_area->zoom > 0.25 then
+		view_area->zoom *= 0.5f
+	end if
 	
 	'recognize if the left button has been pressed
 	if User_Mouse->buttons and 1 then
 		User_Mouse->is_lbtn_pressed = true
 	else
 		User_Mouse->is_lbtn_pressed = false
+	end if
+	
+	'recognize if the right button has been pressed
+	if User_Mouse->buttons and 2 then
+		User_Mouse->is_rbtn_pressed = true
+	else
+		User_Mouse->is_rbtn_pressed = false
 	end if
 	
 	'recognize if the left button has been released
@@ -201,12 +197,19 @@ sub mouse_listener(user_mouse as mouse_proto ptr)
 		User_Mouse->is_lbtn_released = true
 	end if
 	
+	'recognize if the right button has been released
+	if old_is_rbtn_pressed and User_Mouse->is_rbtn_pressed = false then 
+		User_Mouse->is_rbtn_released = true
+	end if
+	
 	'recognize drag
 	if (User_Mouse->is_lbtn_pressed) and CBool((old_x <> user_mouse->x) or (old_y <> user_mouse->y)) then
 		user_mouse->is_dragging = true
+		'cuspid node
 		if multikey(SC_ALT) then
 			user_mouse->oppo_x = user_mouse->old_oppo_x
 			user_mouse->oppo_y = user_mouse->old_oppo_y
+		'normal node
 		else
 			user_mouse->oppo_x = User_Mouse->old_x - _
 						cos (_abtp (User_Mouse->old_x, User_Mouse->old_y, User_Mouse->x, User_Mouse->y)) * _
@@ -224,6 +227,10 @@ sub mouse_listener(user_mouse as mouse_proto ptr)
 	
 	'store the old state of left button
 	old_is_lbtn_pressed = User_Mouse->is_lbtn_pressed
+	'store the old state of left button
+	old_is_rbtn_pressed = User_Mouse->is_rbtn_pressed
+	'store the old wheel state
+	User_Mouse->old_wheel = User_Mouse->wheel
 	
 end sub
 
